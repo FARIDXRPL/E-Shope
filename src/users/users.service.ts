@@ -6,13 +6,12 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { Role } from '../common/enums/role.enum';
-import { CloudinaryService } from '../cloudinary/cloudinary.service'; // ← tambah ini
 
-// Field yang aman untuk dikembalikan (tanpa password)
 const safeUserSelect = {
   id: true,
   name: true,
@@ -27,19 +26,17 @@ const safeUserSelect = {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService,
-    private cloudinaryService: CloudinaryService, // ← tambah ini
+  constructor(
+    private prisma: PrismaService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
-  // ─── Create ──────────────────────────────────────────────
+  // ─── Create ───────────────────────────────────────────────
   async create(dto: CreateUserDto) {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
-
-    if (existing) {
-      throw new ConflictException('Email sudah terdaftar');
-    }
+    if (existing) throw new ConflictException('Email sudah terdaftar');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
@@ -50,15 +47,11 @@ export class UsersService {
         password: hashedPassword,
         phone: dto.phone,
         role: dto.role,
-        avatar: dto.avatar,
       },
       select: safeUserSelect,
     });
 
-    return {
-      message: 'User berhasil dibuat',
-      data: user,
-    };
+    return { message: 'User berhasil dibuat', data: user };
   }
 
   // ─── Find All ─────────────────────────────────────────────
@@ -108,37 +101,25 @@ export class UsersService {
       where: { id },
       select: safeUserSelect,
     });
-
-    if (!user) {
-      throw new NotFoundException('User tidak ditemukan');
-    }
-
-    return {
-      message: 'Berhasil mengambil data user',
-      data: user,
-    };
+    if (!user) throw new NotFoundException('User tidak ditemukan');
+    return { message: 'Berhasil mengambil data user', data: user };
   }
 
-  // ─── Find Me (profil sendiri) ─────────────────────────────
+  // ─── Find Me ──────────────────────────────────────────────
   async findMe(userId: number) {
     return this.findOne(userId);
   }
 
   // ─── Update ───────────────────────────────────────────────
   async update(id: number, dto: UpdateUserDto, currentUser: any) {
-    // Hanya admin atau diri sendiri yang bisa update
     if (currentUser.role !== Role.ADMIN && currentUser.id !== id) {
       throw new ForbiddenException('Tidak punya akses');
     }
 
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) {
-      throw new NotFoundException('User tidak ditemukan');
-    }
+    if (!user) throw new NotFoundException('User tidak ditemukan');
 
     const data: any = { ...dto };
-
-    // Hash password baru kalau ada
     if (dto.password) {
       data.password = await bcrypt.hash(dto.password, 10);
     }
@@ -149,28 +130,11 @@ export class UsersService {
       select: safeUserSelect,
     });
 
-    return {
-      message: 'User berhasil diupdate',
-      data: updated,
-    };
+    return { message: 'User berhasil diupdate', data: updated };
   }
 
-  // ─── Delete ───────────────────────────────────────────────
-  async remove(id: number) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) {
-      throw new NotFoundException('User tidak ditemukan');
-    }
-
-    await this.prisma.user.delete({ where: { id } });
-
-    return {
-      message: 'User berhasil dihapus',
-      data: null,
-    };
-  }
-    async uploadAvatar(id: number, file: Express.Multer.File, currentUser: any) {
-    // Hanya admin atau diri sendiri yang bisa upload avatar
+  // ─── Upload Avatar ────────────────────────────────────────
+  async uploadAvatar(id: number, file: Express.Multer.File, currentUser: any) {
     if (currentUser.role !== Role.ADMIN && currentUser.id !== id) {
       throw new ForbiddenException('Tidak punya akses');
     }
@@ -190,5 +154,14 @@ export class UsersService {
       message: 'Avatar berhasil diupload',
       data: updated,
     };
+  }
+
+  // ─── Delete ───────────────────────────────────────────────
+  async remove(id: number) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User tidak ditemukan');
+
+    await this.prisma.user.delete({ where: { id } });
+    return { message: 'User berhasil dihapus', data: null };
   }
 }

@@ -9,10 +9,10 @@ import {
   Query,
   ParseIntPipe,
   UseGuards,
-  UseInterceptors,  // ← tambah
-  UploadedFile,     // ← tambah
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express'; // ← tambah
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -22,7 +22,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { Role } from '../common/enums/role.enum';
-import { multerImageConfig } from '../helper/multer.config'; // ← tambah
+import { multerImageConfig } from '../helper/multer.config';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -43,7 +43,7 @@ export class UsersController {
     return this.usersService.findAll(query);
   }
 
-  // GET /api/users/me — Semua user yang login
+  // GET /api/users/me
   @Get('me')
   findMe(@GetUser('id') userId: number) {
     return this.usersService.findMe(userId);
@@ -56,7 +56,7 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  // PATCH /api/users/:id — Admin atau diri sendiri
+  // PATCH /api/users/:id — Update data user
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -66,8 +66,8 @@ export class UsersController {
     return this.usersService.update(id, dto, currentUser);
   }
 
-  // PATCH /api/users/:id/avatar — Admin atau diri sendiri ← BARU
-  @Patch(':id/avatar')
+  // POST /api/users/:id/avatar — Upload avatar (terpisah)
+  @Post(':id/avatar')
   @UseInterceptors(FileInterceptor('avatar', multerImageConfig))
   uploadAvatar(
     @Param('id', ParseIntPipe) id: number,

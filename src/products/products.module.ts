@@ -4,7 +4,7 @@ import { ProductsController } from './products.controller';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
-  imports: [CloudinaryModule], // ← tambah ini
+  imports: [CloudinaryModule],
   controllers: [ProductsController],
   providers: [ProductsService],
   exports: [ProductsService],

@@ -9,10 +9,10 @@ import {
   Query,
   ParseIntPipe,
   UseGuards,
-  UseInterceptors,       // ← tambah
-  UploadedFiles,         // ← tambah
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express'; // ← tambah
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -22,7 +22,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { Role } from '../common/enums/role.enum';
-import { multerImageConfig } from '../helper/multer.config'; // ← tambah
+import { multerImageConfig } from '../helper/multer.config';
 
 @Controller('products')
 export class ProductsController {
@@ -36,6 +36,19 @@ export class ProductsController {
     return this.productsService.create(dto, currentUser);
   }
 
+  // POST /api/products/:id/images — Upload gambar produk (terpisah)
+  @Post(':id/images')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SELLER, Role.ADMIN)
+  @UseInterceptors(FilesInterceptor('images', 5, multerImageConfig)) // max 5 gambar
+  uploadImages(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFiles() files: Express.Multer.File[],
+    @GetUser() currentUser: any,
+  ) {
+    return this.productsService.uploadImages(id, files, currentUser);
+  }
+
   // GET /api/products — Public
   @Get()
   findAll(@Query() query: QueryProductDto) {
@@ -46,7 +59,10 @@ export class ProductsController {
   @Get('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SELLER, Role.ADMIN)
-  findMyProducts(@Query() query: QueryProductDto, @GetUser() currentUser: any) {
+  findMyProducts(
+    @Query() query: QueryProductDto,
+    @GetUser() currentUser: any,
+  ) {
     return this.productsService.findMyProducts(query, currentUser);
   }
 
@@ -56,7 +72,7 @@ export class ProductsController {
     return this.productsService.findOne(id);
   }
 
-  // PATCH /api/products/:id — Seller pemilik & Admin
+  // PATCH /api/products/:id — Seller & Admin
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SELLER, Role.ADMIN)
@@ -68,20 +84,7 @@ export class ProductsController {
     return this.productsService.update(id, dto, currentUser);
   }
 
-  // PATCH /api/products/:id/images — Seller pemilik & Admin ← BARU
-  @Patch(':id/images')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SELLER, Role.ADMIN)
-  @UseInterceptors(FilesInterceptor('images', 5, multerImageConfig))
-  uploadImages(
-    @Param('id', ParseIntPipe) id: number,
-    @UploadedFiles() files: Express.Multer.File[],
-    @GetUser() currentUser: any,
-  ) {
-    return this.productsService.uploadImages(id, files, currentUser);
-  }
-
-  // DELETE /api/products/:id — Seller pemilik & Admin
+  // DELETE /api/products/:id — Seller & Admin
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SELLER, Role.ADMIN)
