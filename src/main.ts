@@ -28,7 +28,7 @@ async function bootstrap() {
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  await app.listen(process.env.PORT ?? 3000);
-  console.log(`🚀 E-Shope Backend running on http://localhost:${process.env.PORT ?? 3000}/api`);
+await app.listen(process.env.PORT ?? 3000);
+console.log(`🚀 E-Shope Backend running on port ${process.env.PORT ?? 3000}/api`);
 }
 bootstrap();
